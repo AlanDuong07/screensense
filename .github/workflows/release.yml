@@ -14,3 +14,4 @@ jobs:
     uses: ryansonshine/ryansonshine/.github/workflows/release.yml@main
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
