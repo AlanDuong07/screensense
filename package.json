@@ -1,6 +1,6 @@
 {
   "name": "screensense",
-  "version": "0.0.0-development",
+  "version": "0.1.0-development",
   "description": "Everything you need to make modular, vision only web agents in TypeScript.",
   "main": "./lib/index.js",
   "files": [
