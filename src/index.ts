@@ -1,1 +1,16 @@
-export const myPackage = (taco = ''): string => `${taco} from my package!`;
+/**
+ * ScreenSense - A TypeScript library for creating modular, vision-only web agents
+ *
+ * This is the main entry point for the library. It re-exports all public APIs
+ * from the various modules to provide a clean, unified interface.
+ */
+
+// Re-export from modules
+// export * from './core';
+// export * from './eyes';
+// export * from './hands';
+// export * from './utils';
+// export * from './config';
+
+// Export specific types
+// export type { } from './core/types';
