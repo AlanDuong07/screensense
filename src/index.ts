@@ -6,7 +6,15 @@
  */
 
 // Re-export from modules
-// export * from './core';
+export * from './core';
 
 // Export specific types
-// export type { } from './core/types';
+export type {
+  Tab,
+  RemoteBrowserSettings,
+  LocalBrowserSettings,
+  ScreenSenseConfig,
+  Element,
+  MouseButton,
+  ClickType,
+} from './core/types';

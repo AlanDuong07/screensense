@@ -4,4 +4,5 @@
  * This barrel file re-exports all public APIs from the core module.
  */
 
-// export * from './types';
+export * from './client';
+export * from './types';
