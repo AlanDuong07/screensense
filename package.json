@@ -111,5 +111,8 @@
       "@semantic-release/npm",
       "@semantic-release/github"
     ]
+  },
+  "dependencies": {
+    "playwright": "^1.51.0"
   }
 }
