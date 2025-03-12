@@ -685,7 +685,7 @@ describe('ScreenSense', () => {
     describe('getTabs', () => {
       it('should return list of all tabs', async () => {
         // Open additional tab
-        await screenSense.openNewTab();
+        await screenSense.openNewTab('https://example.com');
 
         const tabs = screenSense.getTabs();
 
@@ -704,8 +704,8 @@ describe('ScreenSense', () => {
     });
 
     describe('openNewTab', () => {
-      it('should open a new tab', async () => {
-        const tab = await screenSense.openNewTab();
+      it('should open a new tab with URL', async () => {
+        const tab = await screenSense.openNewTab('https://example.com');
 
         expect(mockContext.newPage).toHaveBeenCalled();
         expect(tab.title).toBe('Test Page');
@@ -722,27 +722,29 @@ describe('ScreenSense', () => {
         // Create new instance without starting browser
         const newScreenSense = new ScreenSense();
 
-        await expect(newScreenSense.openNewTab()).rejects.toThrow(
-          'No browser context',
-        );
+        await expect(
+          newScreenSense.openNewTab('https://example.com'),
+        ).rejects.toThrow('No browser context');
       });
 
       it('should handle errors when opening new tab', async () => {
         // Mock newPage to throw error
         mockContext.newPage.mockRejectedValueOnce(new Error('New tab error'));
 
-        await expect(screenSense.openNewTab()).rejects.toThrow('New tab error');
+        await expect(
+          screenSense.openNewTab('https://example.com'),
+        ).rejects.toThrow('New tab error');
       });
     });
 
     describe('switchTab', () => {
       it('should switch to another tab by ID', async () => {
         // Open additional tab
-        const newTab = await screenSense.openNewTab();
+        const newTab = await screenSense.openNewTab('https://example.com');
         const tabId = newTab.id;
 
         // Open another tab to make the first one inactive
-        await screenSense.openNewTab();
+        await screenSense.openNewTab('https://another-example.com');
 
         // Switch back to the first new tab
         const switchedTab = await screenSense.switchTab(tabId);

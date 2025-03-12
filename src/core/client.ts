@@ -477,11 +477,11 @@ export class ScreenSense {
   /**
    * Opens a new tab and sets it as the current tab
    *
-   * @param url - Optional URL to navigate to in the new tab
+   * @param url - URL to navigate to in the new tab
    * @returns Promise resolving to the new tab
    * @throws Error if no browser context is available
    */
-  async openNewTab(url?: string): Promise<Tab> {
+  async openNewTab(url: string): Promise<Tab> {
     if (!this.context) {
       throw new Error('No browser context available to open new tab');
     }
@@ -490,10 +490,8 @@ export class ScreenSense {
       // Create a new page
       const page = await this.context.newPage();
 
-      // Navigate to URL if provided
-      if (url) {
-        await page.goto(url);
-      }
+      // Navigate to the provided URL
+      await page.goto(url);
 
       // Move current tab to other tabs if it exists
       if (this.currentTab) {
