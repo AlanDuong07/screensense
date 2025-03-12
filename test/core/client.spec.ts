@@ -31,7 +31,6 @@ describe('ScreenSense', () => {
       move: jest.fn().mockResolvedValue(undefined),
       down: jest.fn().mockResolvedValue(undefined),
       up: jest.fn().mockResolvedValue(undefined),
-      click: jest.fn().mockResolvedValue(undefined),
       wheel: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<Mouse>;
 
@@ -398,16 +397,15 @@ describe('ScreenSense', () => {
         await screenSense.clickMouse('left', 'click', [100, 200]);
 
         expect(mockMouse.move).toHaveBeenCalledWith(100, 200);
-        expect(mockMouse.click).toHaveBeenCalledWith(100, 200, {
-          button: 'left',
-          clickCount: 1,
-        });
+        expect(mockMouse.down).toHaveBeenCalledWith({ button: 'left' });
+        expect(mockMouse.up).toHaveBeenCalledWith({ button: 'left' });
       });
 
       it('should perform multiple clicks', async () => {
         await screenSense.clickMouse('left', 'click', [100, 200], 2);
 
-        expect(mockMouse.click).toHaveBeenCalledTimes(2);
+        expect(mockMouse.down).toHaveBeenCalledTimes(2);
+        expect(mockMouse.up).toHaveBeenCalledTimes(2);
       });
 
       it('should perform mouse down action', async () => {
@@ -428,7 +426,8 @@ describe('ScreenSense', () => {
         await screenSense.clickMouse('left', 'click', [100, 200], 1, ['shift']);
 
         expect(mockKeyboard.down).toHaveBeenCalledWith('Shift_L');
-        expect(mockMouse.click).toHaveBeenCalled();
+        expect(mockMouse.down).toHaveBeenCalledWith({ button: 'left' });
+        expect(mockMouse.up).toHaveBeenCalledWith({ button: 'left' });
         expect(mockKeyboard.up).toHaveBeenCalledWith('Shift_L');
       });
 
@@ -442,8 +441,8 @@ describe('ScreenSense', () => {
       });
 
       it('should handle errors during mouse click', async () => {
-        // Mock mouse click to throw error
-        mockMouse.click.mockRejectedValueOnce(new Error('Mouse click error'));
+        // Mock mouse click down to throw error
+        mockMouse.down.mockRejectedValueOnce(new Error('Mouse click error'));
 
         await expect(
           screenSense.clickMouse('left', 'click', [100, 200]),
