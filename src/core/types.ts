@@ -22,6 +22,7 @@ export interface Tab {
  * Configuration for remote browser settings
  */
 export interface RemoteBrowserSettings {
+  type: 'remote';
   /** WebSocket Secure URL for browser connection */
   wssUrl?: string;
   /** Chrome DevTools Protocol URL */
@@ -32,10 +33,9 @@ export interface RemoteBrowserSettings {
  * Configuration for local browser settings
  */
 export interface LocalBrowserSettings {
+  type: 'local';
   /** Path to local Chrome executable */
   localChromePath?: string;
-  /** User agent string to use */
-  userAgent?: string;
   /** Proxy configuration */
   proxy?: string;
 }
@@ -44,10 +44,10 @@ export interface LocalBrowserSettings {
  * Configuration options for ScreenSense
  */
 export interface ScreenSenseConfig {
-  /** Remote browser connection settings */
-  remoteBrowserSettings?: RemoteBrowserSettings;
-  /** Local browser connection settings */
-  localBrowserSettings?: LocalBrowserSettings;
+  /** Browser settings, either remote or local */
+  browserSettings?: RemoteBrowserSettings | LocalBrowserSettings;
+  /** User agent string to add to every browser context */
+  userAgent?: string;
 }
 
 /**

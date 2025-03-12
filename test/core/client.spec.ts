@@ -95,7 +95,8 @@ describe('ScreenSense', () => {
       it('should start a browser with remote WebSocket settings', async () => {
         // Create instance with remote settings
         screenSense = new ScreenSense({
-          remoteBrowserSettings: {
+          browserSettings: {
+            type: 'remote',
             wssUrl: 'ws://test.url',
           },
         });
@@ -121,7 +122,8 @@ describe('ScreenSense', () => {
       it('should start a browser with remote CDP settings', async () => {
         // Create instance with CDP settings
         screenSense = new ScreenSense({
-          remoteBrowserSettings: {
+          browserSettings: {
+            type: 'remote',
             cdpUrl: 'http://test.cdp.url',
           },
         });
@@ -146,11 +148,12 @@ describe('ScreenSense', () => {
       it('should start a browser with local settings', async () => {
         // Create instance with local settings
         screenSense = new ScreenSense({
-          localBrowserSettings: {
+          browserSettings: {
+            type: 'local',
             localChromePath: '/path/to/chrome',
             proxy: 'http://proxy.test',
-            userAgent: 'Test User Agent',
           },
+          userAgent: 'Test User Agent',
         });
 
         // Mock the dynamic import

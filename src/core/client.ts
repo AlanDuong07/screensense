@@ -50,49 +50,54 @@ export class ScreenSense {
       // Import playwright dynamically to avoid bundling issues
       const { chromium } = await import('playwright');
 
-      // Check if remote browser settings are provided
-      if (this.config.remoteBrowserSettings) {
-        const { wssUrl, cdpUrl } = this.config.remoteBrowserSettings;
+      const { browserSettings } = this.config;
 
-        if (wssUrl) {
-          // Connect to browser using WebSocket URL
-          this.browser = await chromium.connect({ wsEndpoint: wssUrl });
-        } else if (cdpUrl) {
-          // Connect to browser using CDP URL
-          this.browser = await chromium.connectOverCDP({ endpointURL: cdpUrl });
+      // Try to initialize browser based on configuration
+      if (browserSettings) {
+        // Handle remote browser connection
+        if (browserSettings.type === 'remote') {
+          const { wssUrl, cdpUrl } = browserSettings;
+
+          // Try WebSocket connection first, then CDP if available
+          if (wssUrl) {
+            this.browser = await chromium.connect({ wsEndpoint: wssUrl });
+          } else if (cdpUrl) {
+            this.browser = await chromium.connectOverCDP({
+              endpointURL: cdpUrl,
+            });
+          }
+        }
+        // Handle local browser launch if remote wasn't established
+        else if (!this.browser && browserSettings.type === 'local') {
+          const { localChromePath, proxy } = browserSettings;
+          const launchOptions: Record<string, unknown> = {};
+
+          // Add executable path if specified
+          if (localChromePath) {
+            launchOptions.executablePath = localChromePath;
+          }
+
+          // Add proxy settings if specified
+          if (proxy) {
+            launchOptions.proxy = { server: proxy };
+          }
+
+          // Launch local browser with configured options
+          this.browser = await chromium.launch(
+            launchOptions as import('playwright').LaunchOptions,
+          );
         }
       }
 
-      // Fall back to local browser if remote connection wasn't established
-      if (!this.browser && this.config.localBrowserSettings) {
-        const { localChromePath, proxy } = this.config.localBrowserSettings;
-
-        const launchOptions: Record<string, unknown> = {};
-
-        if (localChromePath) {
-          launchOptions.executablePath = localChromePath;
-        }
-
-        if (proxy) {
-          launchOptions.proxy = { server: proxy };
-        }
-
-        // Launch local browser with specified options
-        this.browser = await chromium.launch(
-          launchOptions as import('playwright').LaunchOptions,
-        );
-      }
-
-      // If no specific settings were provided, launch with defaults
+      // Fall back to default browser if no browser was initialized
       if (!this.browser) {
         this.browser = await chromium.launch();
       }
 
       // Create browser context with user agent if specified
       const contextOptions: Record<string, unknown> = {};
-      if (this.config.localBrowserSettings?.userAgent) {
-        const userAgentValue = this.config.localBrowserSettings.userAgent;
-        contextOptions.userAgent = userAgentValue;
+      if (this.config.userAgent) {
+        contextOptions.userAgent = this.config.userAgent;
       }
 
       this.context = await this.browser.newContext(
@@ -104,7 +109,7 @@ export class ScreenSense {
       this.currentTab = {
         id: this.generateTabId(),
         page,
-        title: (await page.title()) || 'New Tab',
+        title: await page.title(),
       };
     } catch (error) {
       // Log the error but don't expose internal details in production
@@ -508,7 +513,7 @@ export class ScreenSense {
       this.currentTab = {
         id: this.generateTabId(),
         page,
-        title: (await page.title()) || 'New Tab',
+        title: await page.title(),
       };
 
       return this.currentTab;
