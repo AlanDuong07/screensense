@@ -6,6 +6,18 @@ module.exports = {
     tsconfigRootDir: __dirname,
     project: ['./tsconfig.json'],
   },
+  overrides: [
+    {
+      files: ['test/**', '**/*.test.ts', '**/*.spec.ts'], // Apply only to test files
+      plugins: ['jest'],
+      rules: {
+        // Disable TypeScript's default rule in test files
+        '@typescript-eslint/unbound-method': 'off',
+        // Enable Jest-specific handling of unbound methods
+        'jest/unbound-method': 'error',
+      },
+    },
+  ],
   extends: [
     'eslint:recommended',
     'plugin:node/recommended',
@@ -28,5 +40,6 @@ module.exports = {
     '@typescript-eslint/no-var-requires': 'off',
     '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/unbound-method': 'error', // Keep it on for non-test files
   },
 };
