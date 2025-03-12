@@ -101,13 +101,6 @@ describe('ScreenSense', () => {
           },
         });
 
-        // Mock the dynamic import
-        jest.doMock('playwright', () => ({
-          chromium: {
-            connect: jest.fn().mockResolvedValue(mockBrowser),
-          },
-        }));
-
         // Get the mocked module
         const { chromium } = await import('playwright');
 
@@ -127,13 +120,6 @@ describe('ScreenSense', () => {
             cdpUrl: 'http://test.cdp.url',
           },
         });
-
-        // Mock the dynamic import
-        jest.doMock('playwright', () => ({
-          chromium: {
-            connectOverCDP: jest.fn().mockResolvedValue(mockBrowser),
-          },
-        }));
 
         // Get the mocked module
         const { chromium } = await import('playwright');
@@ -155,13 +141,6 @@ describe('ScreenSense', () => {
           },
           userAgent: 'Test User Agent',
         });
-
-        // Mock the dynamic import
-        jest.doMock('playwright', () => ({
-          chromium: {
-            launch: jest.fn().mockResolvedValue(mockBrowser),
-          },
-        }));
 
         // Get the mocked module
         const { chromium } = await import('playwright');
@@ -198,13 +177,6 @@ describe('ScreenSense', () => {
 
     describe('closeBrowser', () => {
       it('should close the browser and clean up resources', async () => {
-        // Setup browser first
-        jest.doMock('playwright', () => ({
-          chromium: {
-            launch: jest.fn().mockResolvedValue(mockBrowser),
-          },
-        }));
-
         await screenSense.startBrowser();
         await screenSense.closeBrowser();
 
@@ -212,17 +184,20 @@ describe('ScreenSense', () => {
       });
 
       it('should handle case when browser is already closed', async () => {
+        // Start and close the browser
+        await screenSense.startBrowser();
+        await screenSense.closeBrowser();
+
+        // Reset the mock to verify it's not called again
+        mockBrowser.close.mockClear();
+
+        // Call closeBrowser again when browser is already null
+        // This should not throw an error and not try to close again
         await expect(screenSense.closeBrowser()).resolves.not.toThrow();
+        expect(mockBrowser.close).not.toHaveBeenCalled();
       });
 
       it('should handle errors when closing browser', async () => {
-        // Setup browser first
-        jest.doMock('playwright', () => ({
-          chromium: {
-            launch: jest.fn().mockResolvedValue(mockBrowser),
-          },
-        }));
-
         // Mock browser close to throw error
         mockBrowser.close.mockRejectedValueOnce(
           new Error('Browser close error'),
@@ -242,13 +217,6 @@ describe('ScreenSense', () => {
   describe('Screenshot', () => {
     describe('takeScreenshot', () => {
       it('should take a screenshot and return base64 string', async () => {
-        // Setup browser first
-        jest.doMock('playwright', () => ({
-          chromium: {
-            launch: jest.fn().mockResolvedValue(mockBrowser),
-          },
-        }));
-
         await screenSense.startBrowser();
         const screenshot = await screenSense.takeScreenshot();
 
@@ -263,13 +231,6 @@ describe('ScreenSense', () => {
       });
 
       it('should handle screenshot errors', async () => {
-        // Setup browser first
-        jest.doMock('playwright', () => ({
-          chromium: {
-            launch: jest.fn().mockResolvedValue(mockBrowser),
-          },
-        }));
-
         // Mock screenshot to throw error
         mockPage.screenshot.mockRejectedValueOnce(
           new Error('Screenshot error'),
@@ -286,13 +247,6 @@ describe('ScreenSense', () => {
         const originalNodeEnv = process.env.NODE_ENV;
 
         try {
-          // Setup browser first
-          jest.doMock('playwright', () => ({
-            chromium: {
-              launch: jest.fn().mockResolvedValue(mockBrowser),
-            },
-          }));
-
           // Set NODE_ENV to 'production' to execute the non-test branch
           process.env.NODE_ENV = 'production';
 
@@ -349,13 +303,6 @@ describe('ScreenSense', () => {
    */
   describe('Mouse Interactions', () => {
     beforeEach(async () => {
-      // Setup browser for all mouse tests
-      jest.doMock('playwright', () => ({
-        chromium: {
-          launch: jest.fn().mockResolvedValue(mockBrowser),
-        },
-      }));
-
       await screenSense.startBrowser();
     });
 
@@ -561,16 +508,6 @@ describe('ScreenSense', () => {
    */
   describe('Keyboard Interactions', () => {
     beforeEach(async () => {
-      // Setup browser for all keyboard tests
-      jest.doMock('playwright', () => ({
-        chromium: {
-          launch: jest.fn().mockResolvedValue(mockBrowser),
-        },
-      }));
-
-      // Get the mocked module to ensure it's properly loaded
-      await import('playwright');
-
       await screenSense.startBrowser();
     });
 
@@ -601,22 +538,36 @@ describe('ScreenSense', () => {
         // Increase the Jest timeout for this test
         jest.setTimeout(10000);
 
+        // Reset any previous calls to keyboard methods
+        mockKeyboard.down.mockClear();
+        mockKeyboard.up.mockClear();
+
         // Create a promise that will resolve when the key is released
         const promise = screenSense.pressKey(['a'], 1);
 
-        // Verify key down was called
+        // Verify key down was called immediately
         expect(mockKeyboard.down).toHaveBeenCalledWith('a');
+        expect(mockKeyboard.down).toHaveBeenCalledTimes(1);
 
-        // Fast-forward time
-        jest.advanceTimersByTime(1000);
+        // Verify key up hasn't been called yet
+        expect(mockKeyboard.up).not.toHaveBeenCalled();
 
-        // Resolve all pending promises
+        // Advance time by half the duration
+        jest.advanceTimersByTime(500);
+        await Promise.resolve();
+
+        // Verify key is still down (up hasn't been called)
+        expect(mockKeyboard.up).not.toHaveBeenCalled();
+
+        // Advance time to complete the duration
+        jest.advanceTimersByTime(500);
         await Promise.resolve();
 
         // Complete the promise
         await promise;
 
-        // Verify key up was called
+        // Verify key up was called exactly once with the correct key
+        expect(mockKeyboard.up).toHaveBeenCalledTimes(1);
         expect(mockKeyboard.up).toHaveBeenCalledWith('a');
 
         // Restore timers
@@ -728,13 +679,6 @@ describe('ScreenSense', () => {
    */
   describe('Tab Management', () => {
     beforeEach(async () => {
-      // Setup browser for all tab tests
-      jest.doMock('playwright', () => ({
-        chromium: {
-          launch: jest.fn().mockResolvedValue(mockBrowser),
-        },
-      }));
-
       await screenSense.startBrowser();
     });
 
