@@ -267,18 +267,9 @@ export class ScreenSense {
           await this.currentTab.page.mouse.up({ button });
           break;
         case 'click':
-          // If coordinates aren't provided, we can't click at the current position
-          // since Playwright doesn't provide a way to get the current mouse position
-          // In this case, we'll just perform a direct click at the current coordinates
           for (let i = 0; i < numClicks; i++) {
-            await this.currentTab.page.mouse.click(
-              coordinates?.[0] ?? 0, // Use provided coordinates or default to 0
-              coordinates?.[1] ?? 0, // Use provided coordinates or default to 0
-              {
-                button,
-                clickCount: 1,
-              },
-            );
+            await this.currentTab.page.mouse.down({ button });
+            await this.currentTab.page.mouse.up({ button });
           }
           break;
       }
