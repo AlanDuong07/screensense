@@ -7,10 +7,6 @@
 
 // Re-export from modules
 // export * from './core';
-// export * from './eyes';
-// export * from './hands';
-// export * from './utils';
-// export * from './config';
 
 // Export specific types
 // export type { } from './core/types';
