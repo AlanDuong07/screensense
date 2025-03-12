@@ -285,7 +285,7 @@ export class ScreenSense {
   }
 
   /**
-   * Performs a mouse drag action along a specified path
+   * Performs a mouse click and drag action along a specified path
    *
    * @param path - List of [x, y] coordinate pairs defining the drag path
    * @param holdKeys - Optional list of modifier keys to hold during the action
