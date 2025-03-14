@@ -1,5 +1,15 @@
+/**
+ * Test suite for the ScreenSense client class
+ *
+ * These tests verify the functionality of the ScreenSense class, which provides
+ * methods for browser automation using Playwright with a focus on coordinate-based
+ * interactions rather than DOM selectors.
+ */
+
 import { ScreenSense } from '../../src/core/client';
 import { Browser, BrowserContext, Page, Keyboard, Mouse } from 'playwright';
+import { ScreenProcessor } from '../../src/core/eyes/types';
+import { ScreenProcessorFactory } from '../../src/core/eyes/screenProcessing';
 
 /**
  * Comprehensive test suite for the ScreenSense class
@@ -81,10 +91,10 @@ describe('ScreenSense', () => {
   describe('Browser Lifecycle', () => {
     describe('startBrowser', () => {
       it('should start a browser with default settings', async () => {
-        await screenSense.startBrowser();
-
         // Get the mocked module
         const { chromium } = await import('playwright');
+
+        await screenSense.startBrowser();
 
         // Verify the browser was launched with default settings
         expect(chromium.launch).toHaveBeenCalled();
@@ -273,27 +283,163 @@ describe('ScreenSense', () => {
 
   /**
    * Element Coordinate Tests
+   *
+   * These tests verify that the getCoordinates method correctly interacts with
+   * the ScreenProcessorFactory to process screenshots and extract element coordinates
+   * based on natural language instructions.
    */
   describe('Element Coordinates', () => {
+    /**
+     * Tests for the getCoordinates method which uses the ScreenProcessorFactory
+     * to process screenshots and extract element coordinates based on instructions.
+     */
     describe('getCoordinates', () => {
-      it('should return dummy coordinates for elements', async () => {
-        const elements = await screenSense.getCoordinates(
-          'Find the search box',
+      // Create mock objects for our tests
+      let mockGetScreenProcessor: jest.SpyInstance;
+      let mockProcessor: { process: jest.Mock };
+
+      beforeEach(async () => {
+        // Create a mock processor with test data
+        mockProcessor = {
+          process: jest.fn().mockResolvedValue([
+            {
+              description: 'Test Button',
+              coordinate: [100, 200],
+            },
+            {
+              description: 'Test Link',
+              coordinate: [300, 400],
+            },
+          ]),
+        };
+
+        // Mock the ScreenProcessorFactory.getScreenProcessor method
+        mockGetScreenProcessor = jest
+          .spyOn(ScreenProcessorFactory, 'getScreenProcessor')
+          .mockReturnValue(mockProcessor as unknown as ScreenProcessor);
+
+        // Start the browser for this test
+        await screenSense.startBrowser();
+      });
+
+      afterEach(() => {
+        // Restore the original implementation after each test
+        mockGetScreenProcessor.mockRestore();
+      });
+
+      it('should return element coordinates for a given instruction', async () => {
+        // Define test instruction
+        const instruction = 'find the login button';
+
+        // Call the method
+        const elements = await screenSense.getCoordinates(instruction);
+
+        // Verify screenshot was taken
+        expect(mockPage.screenshot).toHaveBeenCalled();
+
+        // Verify the screen processor was retrieved with the correct processor name
+        // Since we're using default config, processorName should be undefined
+        expect(mockGetScreenProcessor).toHaveBeenCalledWith(undefined);
+
+        // Verify the processor was called with the screenshot and instruction
+        expect(mockProcessor.process).toHaveBeenCalledWith(
+          'test-screenshot',
+          instruction,
         );
 
-        expect(elements).toHaveLength(3);
+        // Verify the returned elements match what our mock returns
+        expect(elements).toHaveLength(2);
         expect(elements[0]).toEqual({
-          description: 'Search box',
+          description: 'Test Button',
           coordinate: [100, 200],
         });
         expect(elements[1]).toEqual({
-          description: 'Submit button',
-          coordinate: [300, 200],
+          description: 'Test Link',
+          coordinate: [300, 400],
         });
-        expect(elements[2]).toEqual({
-          description: 'Navigation menu',
-          coordinate: [50, 50],
+      });
+
+      it('should use custom screen processor if specified in config', async () => {
+        // Create a new instance with custom processor name
+        const customScreenSense = new ScreenSense({
+          screenProcessorName: 'customProcessor',
         });
+
+        // Start browser for the custom instance
+        await customScreenSense.startBrowser();
+
+        // Define test instruction
+        const instruction = 'find the signup button';
+
+        // Call the method
+        await customScreenSense.getCoordinates(instruction);
+
+        // Verify the screen processor was retrieved with custom processor name
+        expect(mockGetScreenProcessor).toHaveBeenCalledWith('customProcessor');
+      });
+
+      it('should throw an error if no active page exists', async () => {
+        // Close the browser to ensure no active page
+        await screenSense.closeBrowser();
+
+        // Define test instruction
+        const instruction = 'find the login button';
+
+        // Verify error is thrown
+        await expect(screenSense.getCoordinates(instruction)).rejects.toThrow(
+          'No active page for getting coordinates',
+        );
+
+        // Verify the screen processor was not called
+        expect(mockProcessor.process).not.toHaveBeenCalled();
+      });
+
+      it('should handle errors from screen processor', async () => {
+        // Mock the screen processor to throw an error for this specific test
+        mockProcessor.process.mockRejectedValueOnce(
+          new Error('Processing failed'),
+        );
+
+        // Define test instruction
+        const instruction = 'find the login button';
+
+        // Verify error is propagated
+        await expect(screenSense.getCoordinates(instruction)).rejects.toThrow(
+          'Processing failed',
+        );
+      });
+
+      it('should handle empty results from screen processor', async () => {
+        // Mock the screen processor to return empty array for this specific test
+        mockProcessor.process.mockResolvedValueOnce([]);
+
+        // Define test instruction
+        const instruction = 'find a non-existent element';
+
+        // Call the method
+        const elements = await screenSense.getCoordinates(instruction);
+
+        // Verify empty array is returned
+        expect(elements).toEqual([]);
+        expect(elements).toHaveLength(0);
+      });
+
+      it('should handle errors when taking screenshot', async () => {
+        // Mock screenshot to throw an error for this specific test
+        mockPage.screenshot.mockRejectedValueOnce(
+          new Error('Screenshot failed'),
+        );
+
+        // Define test instruction
+        const instruction = 'find the login button';
+
+        // Verify error is propagated
+        await expect(screenSense.getCoordinates(instruction)).rejects.toThrow(
+          'Screenshot failed',
+        );
+
+        // Verify the screen processor was not called since the error happens before it's invoked
+        expect(mockProcessor.process).not.toHaveBeenCalled();
       });
     });
   });

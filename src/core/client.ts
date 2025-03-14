@@ -2,11 +2,12 @@ import { Browser, BrowserContext } from 'playwright';
 import {
   Tab,
   ScreenSenseConfig,
-  Element,
+  ScreenElement,
   MouseButton,
   ClickType,
 } from './types';
 import { normalizeKey } from '../utils/helpers';
+import { ScreenProcessorFactory } from './eyes/screenProcessing';
 
 /**
  * ScreenSense - A class for vision-only web automation
@@ -173,19 +174,57 @@ export class ScreenSense {
   /**
    * Gets coordinates for elements based on natural language instruction
    *
-   * @param instruction - Natural language instruction describing elements to locate
+   * This method takes a screenshot of the current page and uses a screen processor
+   * to analyze the image and identify elements based on the provided instruction.
+   * The screen processor is obtained from the ScreenProcessorFactory, which allows
+   * for custom processors to be registered and used.
+   *
+   * @param instruction - Natural language instruction describing elements to locate (e.g., "find the login button")
    * @returns Promise resolving to array of elements with descriptions and coordinates
+   * @throws Error if no active page exists or if processing fails
+   * @example
+   * ```typescript
+   * // Find a login button on the page
+   * const elements = await screenSense.getCoordinates('find the login button');
+   * // Click on the first element found
+   * if (elements.length > 0) {
+   *   await screenSense.clickMouse('left', 'click', elements[0].coordinate);
+   * }
+   * ```
    */
-  async getCoordinates(instruction: string): Promise<Element[]> {
-    // Dummy implementation as requested
-    // In a real implementation, this would use vision models to identify elements
-    console.log('Getting coordinates for instruction:', instruction);
-    await Promise.resolve(); // Add await to satisfy ESLint require-await rule
-    return [
-      { description: 'Search box', coordinate: [100, 200] },
-      { description: 'Submit button', coordinate: [300, 200] },
-      { description: 'Navigation menu', coordinate: [50, 50] },
-    ];
+  async getCoordinates(instruction: string): Promise<ScreenElement[]> {
+    // Validate that we have an active page
+    if (!this.currentTab?.page) {
+      throw new Error('No active page for getting coordinates');
+    }
+
+    try {
+      // Take a screenshot of the current page
+      const screenshot = await this.takeScreenshot();
+
+      // Extract the processor name from config for clarity
+      const processorName = this.config.screenProcessorName;
+
+      // Get the appropriate screen processor from the factory
+      // If no specific processor name is provided, the default will be used
+      const screenProcessor =
+        ScreenProcessorFactory.getScreenProcessor(processorName);
+
+      // Process the screenshot and instruction to get coordinates
+      // This delegates the visual analysis to the specialized processor
+      const elements = await screenProcessor.process(screenshot, instruction);
+
+      // Log the results for debugging purposes
+      console.log(
+        `Found ${elements.length} elements for instruction: ${instruction}`,
+      );
+
+      return elements;
+    } catch (error) {
+      // Log the error but ensure it's propagated for proper error handling
+      console.error('Failed to get coordinates:', error);
+      throw error;
+    }
   }
 
   /**

@@ -14,7 +14,7 @@ export type {
   RemoteBrowserSettings,
   LocalBrowserSettings,
   ScreenSenseConfig,
-  Element,
+  ScreenElement,
   MouseButton,
   ClickType,
 } from './core/types';

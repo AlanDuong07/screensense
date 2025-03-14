@@ -48,12 +48,14 @@ export interface ScreenSenseConfig {
   browserSettings?: RemoteBrowserSettings | LocalBrowserSettings;
   /** User agent string to add to every browser context */
   userAgent?: string;
+  /** Name of the specific screen processor to use for element detection. See src/core/eyes/processors/README.md for more information. */
+  screenProcessorName?: string;
 }
 
 /**
- * Element interface for coordinate-based interactions
+ * Interface for an element on the screen
  */
-export interface Element {
+export interface ScreenElement {
   /** Description of the element */
   description: string;
   /** X,Y coordinates of the element */
