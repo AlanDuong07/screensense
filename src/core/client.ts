@@ -59,7 +59,6 @@ export class ScreenSense {
         if (browserSettings.type === 'remote') {
           const { wssUrl, cdpUrl } = browserSettings;
 
-          // Try WebSocket connection first, then CDP if available
           if (wssUrl) {
             this.browser = await chromium.connect({ wsEndpoint: wssUrl });
           } else if (cdpUrl) {
@@ -73,12 +72,10 @@ export class ScreenSense {
           const { localChromePath, proxy } = browserSettings;
           const launchOptions: Record<string, unknown> = {};
 
-          // Add executable path if specified
           if (localChromePath) {
             launchOptions.executablePath = localChromePath;
           }
 
-          // Add proxy settings if specified
           if (proxy) {
             launchOptions.proxy = { server: proxy };
           }
@@ -113,7 +110,6 @@ export class ScreenSense {
         title: await page.title(),
       };
     } catch (error) {
-      // Log the error but don't expose internal details in production
       console.error('Failed to start browser:', error);
 
       // In test environment, we want to propagate the original error for assertions
@@ -153,7 +149,6 @@ export class ScreenSense {
     }
 
     try {
-      // Take screenshot and return as base64
       const buffer = await this.currentTab.page.screenshot({ type: 'png' });
 
       // For test compatibility, return the raw string in test environment
@@ -163,7 +158,6 @@ export class ScreenSense {
 
       return buffer.toString('base64');
     } catch (error) {
-      // Log the error but don't expose internal details in production
       console.error('Failed to take screenshot:', error);
 
       // In test environment, we want to propagate the original error for assertions
@@ -193,16 +187,13 @@ export class ScreenSense {
    * ```
    */
   async getCoordinates(instruction: string): Promise<ScreenElement[]> {
-    // Validate that we have an active page
     if (!this.currentTab?.page) {
       throw new Error('No active page for getting coordinates');
     }
 
     try {
-      // Take a screenshot of the current page
       const screenshot = await this.takeScreenshot();
 
-      // Extract the processor name from config for clarity
       const processorName = this.config.screenProcessorName;
 
       // Get the appropriate screen processor from the factory
@@ -210,18 +201,14 @@ export class ScreenSense {
       const screenProcessor =
         ScreenProcessorFactory.getScreenProcessor(processorName);
 
-      // Process the screenshot and instruction to get coordinates
-      // This delegates the visual analysis to the specialized processor
       const elements = await screenProcessor.process(screenshot, instruction);
 
-      // Log the results for debugging purposes
       console.log(
         `Found ${elements.length} elements for instruction: ${instruction}`,
       );
 
       return elements;
     } catch (error) {
-      // Log the error but ensure it's propagated for proper error handling
       console.error('Failed to get coordinates:', error);
       throw error;
     }
@@ -234,6 +221,14 @@ export class ScreenSense {
    * @param holdKeys - Optional list of modifier keys to hold during the action
    * @returns Promise resolving when mouse movement is complete
    * @throws Error if no browser or page is active
+   * @example
+   * ```typescript
+   * // Move mouse to coordinates
+   * await screenSense.moveMouse([100, 200]);
+   *
+   * // Move mouse while holding modifier keys
+   * await screenSense.moveMouse([300, 400], ['shift', 'ctrl']);
+   * ```
    */
   async moveMouse(
     coordinates: [number, number],
@@ -251,7 +246,6 @@ export class ScreenSense {
         await this.currentTab.page.keyboard.down(normalizeKey(key));
       }
 
-      // Move mouse to coordinates
       await this.currentTab.page.mouse.move(x, y);
 
       // Release modifier keys
@@ -274,6 +268,17 @@ export class ScreenSense {
    * @param holdKeys - Optional list of modifier keys to hold during the action
    * @returns Promise resolving when click action is complete
    * @throws Error if no browser or page is active
+   * @example
+   * ```typescript
+   * // Simple left click at coordinates
+   * await screenSense.clickMouse('left', 'click', [100, 200]);
+   *
+   * // Double right click
+   * await screenSense.clickMouse('right', 'click', [300, 400], 2);
+   *
+   * // Click while holding Shift key
+   * await screenSense.clickMouse('left', 'click', [500, 600], 1, ['shift']);
+   * ```
    */
   async clickMouse(
     button: MouseButton,
@@ -330,6 +335,17 @@ export class ScreenSense {
    * @param holdKeys - Optional list of modifier keys to hold during the action
    * @returns Promise resolving when drag action is complete
    * @throws Error if no browser or page is active or path is invalid
+   * @example
+   * ```typescript
+   * // Simple drag from one point to another
+   * await screenSense.dragMouse([[100, 100], [200, 200]]);
+   *
+   * // Complex drag path with multiple points
+   * await screenSense.dragMouse([[100, 100], [150, 150], [200, 200]]);
+   *
+   * // Drag while holding Shift key
+   * await screenSense.dragMouse([[100, 100], [200, 200]], ['shift']);
+   * ```
    */
   async dragMouse(
     path: [number, number][],
@@ -349,20 +365,16 @@ export class ScreenSense {
         await this.currentTab.page.keyboard.down(normalizeKey(key));
       }
 
-      // Move to start position
       const [startX, startY] = path[0];
       await this.currentTab.page.mouse.move(startX, startY);
 
-      // Press mouse button down
       await this.currentTab.page.mouse.down();
 
-      // Move through each point in the path
       for (let i = 1; i < path.length; i++) {
         const [x, y] = path[i];
         await this.currentTab.page.mouse.move(x, y);
       }
 
-      // Release mouse button
       await this.currentTab.page.mouse.up();
 
       // Release modifier keys
@@ -384,6 +396,17 @@ export class ScreenSense {
    * @param holdKeys - Optional list of modifier keys to hold during the action
    * @returns Promise resolving when scroll action is complete
    * @throws Error if no browser or page is active
+   * @example
+   * ```typescript
+   * // Scroll down at coordinates
+   * await screenSense.scroll([100, 200], 0, 500);
+   *
+   * // Scroll horizontally
+   * await screenSense.scroll([300, 400], 200, 0);
+   *
+   * // Scroll while holding Shift key
+   * await screenSense.scroll([500, 600], 0, 300, ['shift']);
+   * ```
    */
   async scroll(
     coordinates: [number, number],
@@ -396,7 +419,6 @@ export class ScreenSense {
     }
 
     try {
-      // Move to the specified coordinates first
       const [x, y] = coordinates;
       await this.currentTab.page.mouse.move(x, y);
 
@@ -405,7 +427,6 @@ export class ScreenSense {
         await this.currentTab.page.keyboard.down(normalizeKey(key));
       }
 
-      // Perform the scroll action
       await this.currentTab.page.mouse.wheel(deltaX, deltaY);
 
       // Release modifier keys
@@ -425,6 +446,17 @@ export class ScreenSense {
    * @param duration - Optional time to hold keys in seconds
    * @returns Promise resolving when key press is complete
    * @throws Error if no browser or page is active
+   * @example
+   * ```typescript
+   * // Press a single key
+   * await screenSense.pressKey(['a']);
+   *
+   * // Press multiple keys in sequence
+   * await screenSense.pressKey(['a', 'b', 'c']);
+   *
+   * // Press and hold keys for 1 second
+   * await screenSense.pressKey(['shift', 'a'], 1);
+   * ```
    */
   async pressKey(keys: string[], duration?: number): Promise<void> {
     if (!this.currentTab?.page) {
@@ -432,14 +464,11 @@ export class ScreenSense {
     }
 
     try {
-      // Press down all keys
       for (const key of keys) {
         await this.currentTab.page.keyboard.down(normalizeKey(key));
       }
 
-      // Wait for specified duration if provided
       if (duration) {
-        // Use a more efficient approach for tests to avoid timeouts
         if (process.env.NODE_ENV === 'test') {
           // In test environment, we'll just simulate the wait
           // The test will use jest.advanceTimersByTime to simulate time passing
@@ -465,6 +494,14 @@ export class ScreenSense {
    * @param holdKeys - Optional list of modifier keys to hold while typing
    * @returns Promise resolving when typing is complete
    * @throws Error if no browser or page is active
+   * @example
+   * ```typescript
+   * // Type text
+   * await screenSense.typeText('Hello world');
+   *
+   * // Type text with modifier keys held
+   * await screenSense.typeText('Hello', ['shift']);
+   * ```
    */
   async typeText(text: string, holdKeys: string[] = []): Promise<void> {
     if (!this.currentTab?.page) {
@@ -477,7 +514,6 @@ export class ScreenSense {
         await this.currentTab.page.keyboard.down(normalizeKey(key));
       }
 
-      // Type the text
       await this.currentTab.page.keyboard.type(text);
 
       // Release modifier keys
@@ -495,6 +531,11 @@ export class ScreenSense {
    *
    * @param duration - Time to wait in seconds
    * @returns Promise resolving after the wait period
+   * @example
+   * ```typescript
+   * // Wait for 2 seconds
+   * await screenSense.wait(2);
+   * ```
    */
   async wait(duration: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, duration * 1000));
@@ -526,18 +567,14 @@ export class ScreenSense {
     }
 
     try {
-      // Create a new page
       const page = await this.context.newPage();
 
-      // Navigate to the provided URL
       await page.goto(url);
 
-      // Move current tab to other tabs if it exists
       if (this.currentTab) {
         this.otherTabs.push(this.currentTab);
       }
 
-      // Set new tab as current
       this.currentTab = {
         id: this.generateTabId(),
         page,
@@ -559,28 +596,22 @@ export class ScreenSense {
    * @throws Error if tab with specified ID is not found
    */
   async switchTab(tabId: number): Promise<Tab> {
-    // Find the tab with the specified ID
     const tabIndex = this.otherTabs.findIndex(tab => tab.id === tabId);
 
     if (tabIndex === -1) {
       throw new Error(`Tab with ID ${tabId} not found`);
     }
 
-    // Get the tab to switch to
     const tabToSwitchTo = this.otherTabs[tabIndex];
 
-    // Remove it from other tabs
     this.otherTabs.splice(tabIndex, 1);
 
-    // Add current tab to other tabs if it exists
     if (this.currentTab) {
       this.otherTabs.push(this.currentTab);
     }
 
-    // Set the new current tab
     this.currentTab = tabToSwitchTo;
 
-    // Bring the tab to front
     await this.currentTab.page.bringToFront();
 
     return this.currentTab;

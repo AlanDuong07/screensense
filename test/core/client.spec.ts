@@ -11,12 +11,6 @@ import { Browser, BrowserContext, Page, Keyboard, Mouse } from 'playwright';
 import { ScreenProcessor } from '../../src/core/eyes/types';
 import { ScreenProcessorFactory } from '../../src/core/eyes/screenProcessing';
 
-/**
- * Comprehensive test suite for the ScreenSense class
- *
- * This suite tests all public methods of the ScreenSense class to ensure
- * proper functionality and error handling for browser automation tasks.
- */
 describe('ScreenSense', () => {
   // Mock objects
   let mockBrowser: jest.Mocked<Browser>;
@@ -328,26 +322,20 @@ describe('ScreenSense', () => {
       });
 
       it('should return element coordinates for a given instruction', async () => {
-        // Define test instruction
         const instruction = 'find the login button';
 
-        // Call the method
         const elements = await screenSense.getCoordinates(instruction);
 
-        // Verify screenshot was taken
         expect(mockPage.screenshot).toHaveBeenCalled();
 
-        // Verify the screen processor was retrieved with the correct processor name
         // Since we're using default config, processorName should be undefined
         expect(mockGetScreenProcessor).toHaveBeenCalledWith(undefined);
 
-        // Verify the processor was called with the screenshot and instruction
         expect(mockProcessor.process).toHaveBeenCalledWith(
           'test-screenshot',
           instruction,
         );
 
-        // Verify the returned elements match what our mock returns
         expect(elements).toHaveLength(2);
         expect(elements[0]).toEqual({
           description: 'Test Button',
@@ -360,85 +348,65 @@ describe('ScreenSense', () => {
       });
 
       it('should use custom screen processor if specified in config', async () => {
-        // Create a new instance with custom processor name
         const customScreenSense = new ScreenSense({
           screenProcessorName: 'customProcessor',
         });
 
-        // Start browser for the custom instance
         await customScreenSense.startBrowser();
 
-        // Define test instruction
         const instruction = 'find the signup button';
 
-        // Call the method
         await customScreenSense.getCoordinates(instruction);
 
-        // Verify the screen processor was retrieved with custom processor name
         expect(mockGetScreenProcessor).toHaveBeenCalledWith('customProcessor');
       });
 
       it('should throw an error if no active page exists', async () => {
-        // Close the browser to ensure no active page
         await screenSense.closeBrowser();
 
-        // Define test instruction
         const instruction = 'find the login button';
 
-        // Verify error is thrown
         await expect(screenSense.getCoordinates(instruction)).rejects.toThrow(
           'No active page for getting coordinates',
         );
 
-        // Verify the screen processor was not called
         expect(mockProcessor.process).not.toHaveBeenCalled();
       });
 
       it('should handle errors from screen processor', async () => {
-        // Mock the screen processor to throw an error for this specific test
         mockProcessor.process.mockRejectedValueOnce(
           new Error('Processing failed'),
         );
 
-        // Define test instruction
         const instruction = 'find the login button';
 
-        // Verify error is propagated
         await expect(screenSense.getCoordinates(instruction)).rejects.toThrow(
           'Processing failed',
         );
       });
 
       it('should handle empty results from screen processor', async () => {
-        // Mock the screen processor to return empty array for this specific test
         mockProcessor.process.mockResolvedValueOnce([]);
 
-        // Define test instruction
         const instruction = 'find a non-existent element';
 
-        // Call the method
         const elements = await screenSense.getCoordinates(instruction);
 
-        // Verify empty array is returned
         expect(elements).toEqual([]);
         expect(elements).toHaveLength(0);
       });
 
       it('should handle errors when taking screenshot', async () => {
-        // Mock screenshot to throw an error for this specific test
         mockPage.screenshot.mockRejectedValueOnce(
           new Error('Screenshot failed'),
         );
 
-        // Define test instruction
         const instruction = 'find the login button';
 
-        // Verify error is propagated
         await expect(screenSense.getCoordinates(instruction)).rejects.toThrow(
           'Screenshot failed',
         );
 
-        // Verify the screen processor was not called since the error happens before it's invoked
         expect(mockProcessor.process).not.toHaveBeenCalled();
       });
     });
@@ -479,7 +447,6 @@ describe('ScreenSense', () => {
       });
 
       it('should handle errors during mouse movement', async () => {
-        // Mock mouse move to throw error
         mockMouse.move.mockRejectedValueOnce(new Error('Mouse move error'));
 
         await expect(screenSense.moveMouse([100, 200])).rejects.toThrow(
@@ -537,7 +504,6 @@ describe('ScreenSense', () => {
       });
 
       it('should handle errors during mouse click', async () => {
-        // Mock mouse click down to throw error
         mockMouse.down.mockRejectedValueOnce(new Error('Mouse click error'));
 
         await expect(
@@ -599,7 +565,6 @@ describe('ScreenSense', () => {
       });
 
       it('should handle errors during drag', async () => {
-        // Mock mouse down to throw error
         mockMouse.down.mockRejectedValueOnce(new Error('Mouse drag error'));
 
         const path: [number, number][] = [
@@ -639,7 +604,6 @@ describe('ScreenSense', () => {
       });
 
       it('should handle errors during scroll', async () => {
-        // Mock mouse wheel to throw error
         mockMouse.wheel.mockRejectedValueOnce(new Error('Scroll error'));
 
         await expect(screenSense.scroll([100, 200], 0, 500)).rejects.toThrow(
@@ -678,13 +642,10 @@ describe('ScreenSense', () => {
       });
 
       it('should hold keys for specified duration', async () => {
-        // Mock setTimeout
         jest.useFakeTimers();
 
-        // Increase the Jest timeout for this test
         jest.setTimeout(10000);
 
-        // Reset any previous calls to keyboard methods
         mockKeyboard.down.mockClear();
         mockKeyboard.up.mockClear();
 
@@ -695,28 +656,23 @@ describe('ScreenSense', () => {
         expect(mockKeyboard.down).toHaveBeenCalledWith('a');
         expect(mockKeyboard.down).toHaveBeenCalledTimes(1);
 
-        // Verify key up hasn't been called yet
         expect(mockKeyboard.up).not.toHaveBeenCalled();
 
-        // Advance time by half the duration
         jest.advanceTimersByTime(500);
         await Promise.resolve();
 
         // Verify key is still down (up hasn't been called)
         expect(mockKeyboard.up).not.toHaveBeenCalled();
 
-        // Advance time to complete the duration
         jest.advanceTimersByTime(500);
         await Promise.resolve();
 
-        // Complete the promise
         await promise;
 
         // Verify key up was called exactly once with the correct key
         expect(mockKeyboard.up).toHaveBeenCalledTimes(1);
         expect(mockKeyboard.up).toHaveBeenCalledWith('a');
 
-        // Restore timers
         jest.useRealTimers();
       });
 
@@ -737,24 +693,19 @@ describe('ScreenSense', () => {
           // Set NODE_ENV to 'production' to execute the else branch
           process.env.NODE_ENV = 'production';
 
-          // Spy on the wait method
           const waitSpy = jest
             .spyOn(screenSense, 'wait')
             .mockResolvedValue(undefined);
 
-          // Call pressKey with a duration
           await screenSense.pressKey(['a'], 1);
 
-          // Verify wait was called with the correct duration
           expect(waitSpy).toHaveBeenCalledWith(1);
         } finally {
-          // Restore original NODE_ENV
           process.env.NODE_ENV = originalNodeEnv;
         }
       });
 
       it('should handle errors during key press', async () => {
-        // Mock keyboard down to throw error
         mockKeyboard.down.mockRejectedValueOnce(new Error('Key press error'));
 
         await expect(screenSense.pressKey(['a'])).rejects.toThrow(
@@ -788,7 +739,6 @@ describe('ScreenSense', () => {
       });
 
       it('should handle errors during typing', async () => {
-        // Mock keyboard type to throw error
         mockKeyboard.type.mockRejectedValueOnce(new Error('Type error'));
 
         await expect(screenSense.typeText('Hello')).rejects.toThrow(
@@ -804,17 +754,14 @@ describe('ScreenSense', () => {
   describe('Utility Methods', () => {
     describe('wait', () => {
       it('should wait for specified duration', async () => {
-        // Mock setTimeout
         jest.useFakeTimers();
 
         const promise = screenSense.wait(2);
 
-        // Fast-forward time
         jest.advanceTimersByTime(2000);
 
         await promise;
 
-        // Restore timers
         jest.useRealTimers();
       });
     });
@@ -874,7 +821,6 @@ describe('ScreenSense', () => {
       });
 
       it('should handle errors when opening new tab', async () => {
-        // Mock newPage to throw error
         mockContext.newPage.mockRejectedValueOnce(new Error('New tab error'));
 
         await expect(
@@ -885,14 +831,12 @@ describe('ScreenSense', () => {
 
     describe('switchTab', () => {
       it('should switch to another tab by ID', async () => {
-        // Open additional tab
         const newTab = await screenSense.openNewTab('https://example.com');
         const tabId = newTab.id;
 
         // Open another tab to make the first one inactive
         await screenSense.openNewTab('https://another-example.com');
 
-        // Switch back to the first new tab
         const switchedTab = await screenSense.switchTab(tabId);
 
         expect(switchedTab.id).toBe(tabId);

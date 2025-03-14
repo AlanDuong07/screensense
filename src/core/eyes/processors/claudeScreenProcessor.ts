@@ -1,20 +1,12 @@
 import { ScreenProcessor } from '../types';
-import { ScreenElement } from '../../types';
+import { ScreenElement, ScreenElementSchema } from '../../types';
 // Import the Node.js shim for Anthropic SDK to provide the required Web Fetch API
 import '@anthropic-ai/sdk/shims/node';
 import { Anthropic } from '@anthropic-ai/sdk';
-import { z } from 'zod';
 import { BetaMessageParam } from '@anthropic-ai/sdk/resources/beta/messages/messages';
+import { z } from 'zod';
 
-/**
- * Schema for validating element information returned by Claude
- */
-const ElementSchema = z.object({
-  description: z.string(),
-  coordinate: z.tuple([z.number(), z.number()]),
-});
-
-const ElementArraySchema = z.array(ElementSchema);
+const ElementArraySchema = z.array(ScreenElementSchema);
 
 /**
  * Configuration for Claude API interactions
@@ -65,7 +57,7 @@ export class ClaudeScreenProcessor implements ScreenProcessor {
     }
 
     this.config = {
-      apiKey: resolvedApiKey || '', // Empty string as fallback to prevent undefined errors
+      apiKey: resolvedApiKey || '',
       model: 'claude-3-7-sonnet-20250219',
       maxTokens: 4096,
       toolVersion: '20250124',
@@ -86,21 +78,17 @@ export class ClaudeScreenProcessor implements ScreenProcessor {
     screenshot: string,
     instruction: string,
   ): Promise<ScreenElement[]> {
-    // If no API key is available, return empty array
     if (!this.config.apiKey) {
       return [];
     }
 
-    // Create a cache key based on the screenshot and instruction
     const cacheKey = `${screenshot.substring(0, 100)}_${instruction}`;
 
-    // Check if we already have results for this input
     if (this.cachedResults.has(cacheKey)) {
       return this.cachedResults.get(cacheKey) || [];
     }
 
     try {
-      // Prepare the messages for Claude API
       const messages: BetaMessageParam[] = [
         {
           role: 'user',
@@ -165,7 +153,6 @@ export class ClaudeScreenProcessor implements ScreenProcessor {
       for (const block of response.content) {
         if (block.type === 'text') {
           try {
-            // Parse and validate the JSON response
             const parsedData = JSON.parse(block.text);
             const validatedElements: ClaudeElementInfo[] =
               ElementArraySchema.parse(parsedData);

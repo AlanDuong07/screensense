@@ -8,7 +8,6 @@ import { ScreenSense } from '../src';
  */
 describe('ScreenSense', () => {
   it('should be properly exported and instantiable', () => {
-    // Check that ScreenSense is exported correctly
     expect(ScreenSense).toBeDefined();
 
     // Check that we can create an instance
