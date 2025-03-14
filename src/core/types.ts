@@ -5,6 +5,7 @@
  * These types establish the foundation for the API and ensure type safety.
  */
 import { Page } from 'playwright';
+import { z } from 'zod';
 
 /**
  * Tab interface representing a browser tab
@@ -53,14 +54,17 @@ export interface ScreenSenseConfig {
 }
 
 /**
- * Interface for an element on the screen
+ * Schema for validating element information returned by screen processors
  */
-export interface ScreenElement {
-  /** Description of the element */
-  description: string;
-  /** X,Y coordinates of the element */
-  coordinate: [number, number];
-}
+export const ScreenElementSchema = z.object({
+  description: z.string(),
+  coordinate: z.tuple([z.number(), z.number()]),
+});
+
+/**
+ * Type for an element on the screen
+ */
+export type ScreenElement = z.infer<typeof ScreenElementSchema>;
 
 /**
  * Type for mouse button options supported by Playwright
