@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
     "clean": "rm -rf ./lib/",
-    "cm": "cz",
+    "cm": "lint-staged && cz",
     "lint": "eslint ./src/ ./test/ --fix",
     "format": "prettier --write './src/**/*.ts' './test/**/*.ts'",
     "prepare": "husky install",
